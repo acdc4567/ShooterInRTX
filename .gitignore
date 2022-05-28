@@ -12,4 +12,6 @@ Saved
 *.suo
 *.xcodeproj
 *.xcworkspace
-Content/ParagonTwinBlast/Characters/*
+Content/ParagonTwinBlast/Characters/Global/*
+Content/ParagonTwinBlast/Characters/ErikaMixamo/*
+Content/ParagonTwinBlast/Characters/Maps/*
