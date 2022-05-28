@@ -4,7 +4,13 @@
 #include "Character/ShooterCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Animation/AnimMontage.h"
+#include "DrawDebugHelpers.h"
+#include "Particles/ParticleSystemComponent.h"
 
 
 
@@ -29,6 +35,13 @@ AShooterCharacter::AShooterCharacter()
 	FollowCamera->SetupAttachment(CameraBoom,USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = 0;
 
+	bUseControllerRotationPitch = 0;
+	bUseControllerRotationYaw = 1;
+	bUseControllerRotationRoll = 0;
+
+	GetCharacterMovement()->bOrientRotationToMovement = 0;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+	GetCharacterMovement()->AirControl = .2f;
 
 
 
@@ -44,6 +57,217 @@ void AShooterCharacter::BeginPlay()
 	
 }
 
+void AShooterCharacter::MoveForward(float Value) {
+
+
+	if (Controller != nullptr && Value != 0.f) {
+		const FRotator Rotation{ Controller->GetControlRotation() };
+		const FRotator YawRotation{ 0,Rotation.Yaw,0 };
+		const FVector Direction{ FRotationMatrix{YawRotation}.GetUnitAxis(EAxis::X) };
+	
+		AddMovementInput(Direction, Value);
+	
+	}
+
+
+
+}
+
+void AShooterCharacter::MoveRight(float Value) {
+
+	if (Controller != nullptr && Value != 0.f) {
+		const FRotator Rotation{ Controller->GetControlRotation() };
+		const FRotator YawRotation{ 0,Rotation.Yaw,0 };
+		const FVector Direction{ FRotationMatrix{YawRotation}.GetUnitAxis(EAxis::Y) };
+
+		AddMovementInput(Direction, Value);
+
+	}
+
+
+
+}
+
+void AShooterCharacter::TurnAtRate(float Rate) {
+	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+
+
+
+
+
+}
+
+void AShooterCharacter::LookUpAtRate(float Rate) {
+
+	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+
+
+
+
+}
+
+void AShooterCharacter::MouseTurn() {
+
+
+}
+
+void AShooterCharacter::MouseLookUp() {
+
+
+
+
+}
+
+void AShooterCharacter::FireWeapon() {
+
+	if (FireSound&&TwinFireSound) {
+		if (bIsCarryingTwinBlast) {
+			UGameplayStatics::PlaySound2D(this, TwinFireSound);
+			
+		}
+		else {
+			UGameplayStatics::PlaySound2D(this, FireSound);
+		}
+
+	}
+
+	const USkeletalMeshSocket* BarrelSocket = GetMesh()->GetSocketByName("BarrelSocket");
+	const USkeletalMeshSocket* BarrelSocketR = GetMesh()->GetSocketByName("BarrelSocketR");
+	
+	if (BarrelSocket) {
+		const FTransform SocketTransform = BarrelSocket->GetSocketTransform(GetMesh());
+		const FTransform SocketTransformR = BarrelSocketR->GetSocketTransform(GetMesh());
+			
+		if (BarrelSocketR) {
+			if (MuzzleFlash) {
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, SocketTransformR);
+
+			}
+		}
+		
+		if (MuzzleFlash) {
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, SocketTransform);
+			
+		}
+
+		FVector BeamEnd;
+		bool bBeamEnd = GetBeamEndLocation(SocketTransform.GetLocation(), BeamEnd);
+		if (bBeamEnd) {
+			if (ImpactParticles) {
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, BeamEnd);
+
+			}
+			if (bIsCarryingTwinBlast) {
+				if (BeamParticles) {
+					UParticleSystemComponent* Beam = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BeamParticles, SocketTransform);
+					UParticleSystemComponent* BeamR = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BeamParticles, SocketTransformR);
+
+					if (Beam && BeamR) {
+						Beam->SetVectorParameter(FName("Target"), BeamEnd);
+						BeamR->SetVectorParameter(FName("Target"), BeamEnd);
+
+					}
+
+
+				}
+			}
+			else {
+				if (BeamParticles) {
+					UParticleSystemComponent* Beam = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BeamParticles, SocketTransform);
+
+					if (Beam) {
+						Beam->SetVectorParameter(FName("Target"), BeamEnd);
+
+					}
+
+
+				}
+			}
+
+
+
+		}
+
+
+		
+
+		
+
+
+
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && HipFireMontage) {
+		AnimInstance->Montage_Play(HipFireMontage);
+		AnimInstance->Montage_JumpToSection(FName("StartFire"));
+
+	}
+
+
+
+
+
+
+
+
+
+}
+
+bool AShooterCharacter::GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation) {
+
+	FVector2D ViewportSize;
+	if (GEngine && GEngine->GameViewport) {
+
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+	}
+
+	FVector CrosshairWorldPosition;
+	FVector CrosshairWorldDirection;
+	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(UGameplayStatics::GetPlayerController(this, 0), CrosshairLocation, CrosshairWorldPosition, CrosshairWorldDirection);
+	if (bScreenToWorld) {
+		FHitResult ScreenTraceHit;
+		const FVector Start = CrosshairWorldPosition;
+		const FVector End = CrosshairWorldPosition + CrosshairWorldDirection * 80'000.f;
+
+		OutBeamLocation = End;
+		GetWorld()->LineTraceSingleByChannel(ScreenTraceHit, Start, End, ECollisionChannel::ECC_Visibility);
+		if (ScreenTraceHit.bBlockingHit) {
+			OutBeamLocation = ScreenTraceHit.Location;
+
+
+		}
+
+		//SecondTrace
+
+		FHitResult WeaponTraceHit;
+		const FVector WeaponTraceStart = MuzzleSocketLocation;
+		const FVector WeaponTraceEnd = OutBeamLocation;
+
+		GetWorld()->LineTraceSingleByChannel(WeaponTraceHit, WeaponTraceStart, WeaponTraceEnd, ECollisionChannel::ECC_Visibility);;
+		if (WeaponTraceHit.bBlockingHit) {
+			OutBeamLocation = WeaponTraceHit.Location;
+
+
+		}
+		return 1;
+
+
+
+	}
+
+	return 0;
+
+
+
+
+
+
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
@@ -55,6 +279,25 @@ void AShooterCharacter::Tick(float DeltaTime)
 void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	check(PlayerInputComponent);
+
+
+	PlayerInputComponent->BindAxis("MoveForward", this, &AShooterCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AShooterCharacter::MoveRight);
+
+	PlayerInputComponent->BindAxis("TurnRate", this, &AShooterCharacter::TurnAtRate);
+	PlayerInputComponent->BindAxis("LookUpRate", this, &AShooterCharacter::LookUpAtRate);
+
+	PlayerInputComponent->BindAxis("Turn", this, &AShooterCharacter::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("LookUp", this, &AShooterCharacter::AddControllerPitchInput);
+
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AShooterCharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AShooterCharacter::StopJumping);
+
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AShooterCharacter::FireWeapon);
+
+
 
 }
 

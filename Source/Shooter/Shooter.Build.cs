@@ -14,7 +14,7 @@ public class Shooter : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 		"Shooter/Public/Character"
-		
+		,"Shooter/Public/Animation"
 		});
 
 		// Uncomment if you are using Slate UI
