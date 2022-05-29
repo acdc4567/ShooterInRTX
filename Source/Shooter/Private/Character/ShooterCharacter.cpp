@@ -55,6 +55,13 @@ void AShooterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (FollowCamera) {
+		CameraDefaultFOV = GetFollowCamera()->FieldOfView;
+		CameraCurrentFOV = CameraDefaultFOV;
+	}
+
+
+
 }
 
 void AShooterCharacter::MoveForward(float Value) {
@@ -106,13 +113,27 @@ void AShooterCharacter::LookUpAtRate(float Rate) {
 
 }
 
-void AShooterCharacter::MouseTurn() {
+void AShooterCharacter::MouseTurn(float Value) {
 
-
+	float TurnRatex;
+	if (bAiming) {
+		TurnRatex = AimTurnRate;
+	}
+	else {
+		TurnRatex = HipTurnRate;
+	}
+	AddControllerYawInput(Value*TurnRatex);
 }
 
-void AShooterCharacter::MouseLookUp() {
-
+void AShooterCharacter::MouseLookUp(float Value) {
+	float TurnRatex;
+	if (bAiming) {
+		TurnRatex = AimLookUpRate;
+	}
+	else {
+		TurnRatex = HipLookUpRate;
+	}
+	AddControllerPitchInput(Value * TurnRatex);
 
 
 
@@ -138,7 +159,7 @@ void AShooterCharacter::FireWeapon() {
 		const FTransform SocketTransform = BarrelSocket->GetSocketTransform(GetMesh());
 		const FTransform SocketTransformR = BarrelSocketR->GetSocketTransform(GetMesh());
 			
-		if (BarrelSocketR) {
+		if (bIsCarryingTwinBlast&& BarrelSocketR) {
 			if (MuzzleFlash) {
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, SocketTransformR);
 
@@ -189,20 +210,25 @@ void AShooterCharacter::FireWeapon() {
 		}
 
 
-		
-
-		
-
-
-
 	}
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && HipFireMontage) {
-		AnimInstance->Montage_Play(HipFireMontage);
-		AnimInstance->Montage_JumpToSection(FName("StartFire"));
+	if (bIsCarryingTwinBlast) {
+		if (AnimInstance && HipFireMontage) {
+			AnimInstance->Montage_Play(HipFireMontage);
+			AnimInstance->Montage_JumpToSection(FName("StartFire"));
 
+		}
 	}
+	if (!bIsCarryingTwinBlast) {
+		if (AnimInstance && BelicaHipFireMontage) {
+			AnimInstance->Montage_Play(BelicaHipFireMontage);
+			AnimInstance->Montage_JumpToSection(FName("StartFire"));
+
+		}
+	}
+		
+	
 
 
 
@@ -268,10 +294,76 @@ bool AShooterCharacter::GetBeamEndLocation(const FVector& MuzzleSocketLocation, 
 
 }
 
+void AShooterCharacter::AimingButtonPressed() {
+
+	bAiming = 1;
+	
+}
+
+void AShooterCharacter::AimingButtonReleased() {
+
+	bAiming = 0;
+	
+}
+
+void AShooterCharacter::CameraInterpZoom(float DeltaTime) {
+
+	if (bAiming) {
+
+		CameraCurrentFOV = FMath::FInterpTo(CameraCurrentFOV, CameraZoomedFOV, DeltaTime, ZoomInterpSpeed);
+	}
+	else {
+		CameraCurrentFOV = FMath::FInterpTo(CameraCurrentFOV, CameraDefaultFOV, DeltaTime, ZoomInterpSpeed);
+
+	}
+	GetFollowCamera()->SetFieldOfView(CameraCurrentFOV);
+
+
+
+}
+
+void AShooterCharacter::CalculateCrosshairSpread(float DeltaTime) {
+
+	FVector2D	WalkSpeedRange{ 0.f,600.f };
+	FVector2D	VelocityMultiplierRange{ 0.f,1.f };
+	FVector Velocity = GetVelocity();
+	Velocity.Z = 0.f;
+
+	CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
+
+
+	if (GetCharacterMovement()->IsFalling()) {
+		CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
+	
+	}
+	else {
+		CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 32.25f);
+
+	}
+	if (bAiming) {
+		CrosshairAimFactor=FMath::FInterpTo(CrosshairAimFactor,.6f, DeltaTime, 32.25f);
+	}
+	else {
+		CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.f, DeltaTime, 32.25f);
+
+	}
+
+
+	CrosshairSpreadMultiplier = .5f + CrosshairVelocityFactor+CrosshairInAirFactor-CrosshairAimFactor;
+}
+
+float AShooterCharacter::GetCrosshairSpreadMultipler() const {
+	return CrosshairSpreadMultiplier;
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	CameraInterpZoom(DeltaTime);
+	CalculateCrosshairSpread(DeltaTime);
+
 
 }
 
@@ -286,17 +378,19 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis("MoveForward", this, &AShooterCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AShooterCharacter::MoveRight);
 
-	PlayerInputComponent->BindAxis("TurnRate", this, &AShooterCharacter::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUpRate", this, &AShooterCharacter::LookUpAtRate);
+	PlayerInputComponent->BindAxis("TurnRate", this, &AShooterCharacter::MouseTurn);
+	PlayerInputComponent->BindAxis("LookUpRate", this, &AShooterCharacter::MouseLookUp);
 
-	PlayerInputComponent->BindAxis("Turn", this, &AShooterCharacter::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("LookUp", this, &AShooterCharacter::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("Turn", this, &AShooterCharacter::MouseTurn);
+	PlayerInputComponent->BindAxis("LookUp", this, &AShooterCharacter::MouseLookUp);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AShooterCharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AShooterCharacter::StopJumping);
 
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AShooterCharacter::FireWeapon);
 
+	PlayerInputComponent->BindAction("AimingButton", IE_Pressed, this, &AShooterCharacter::AimingButtonPressed);
+	PlayerInputComponent->BindAction("AimingButton", IE_Released, this, &AShooterCharacter::AimingButtonReleased);
 
 
 }

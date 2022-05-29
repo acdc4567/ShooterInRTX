@@ -13,3 +13,8 @@ Saved
 *.xcodeproj
 *.xcworkspace
 Content/ParagonTwinBlast/Characters/Maps/*
+Content/ParagonLtBelica/*
+Content/Interface_And_Item_Sounds/*
+Content/ModSci_Engineer/*
+Content/ModSci_EngiProps/*
+Content/ModSciInteriors/*
