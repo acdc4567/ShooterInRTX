@@ -62,6 +62,12 @@ protected:
 	UFUNCTION()
 	void AutoFireReset();
 
+	bool TraceUnderCrosshairs(FHitResult& OutHitResult,FVector & OutHitLocation);
+
+
+
+
+
 
 
 private:

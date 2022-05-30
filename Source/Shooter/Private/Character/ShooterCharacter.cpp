@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Ultimate Apex Shooter.All Rights Reserved..
 
 
 #include "Character/ShooterCharacter.h"
@@ -11,6 +11,8 @@
 #include "Animation/AnimMontage.h"
 #include "DrawDebugHelpers.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Weapons/Item.h"
+#include "Components/WidgetComponent.h"
 
 
 
@@ -242,55 +244,34 @@ void AShooterCharacter::FireWeapon() {
 
 bool AShooterCharacter::GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation) {
 
-	FVector2D ViewportSize;
-	if (GEngine && GEngine->GameViewport) {
+	FHitResult CrosshairHitResult;
+	bool bCrosshairHit = TraceUnderCrosshairs(CrosshairHitResult, OutBeamLocation);
+	if (bCrosshairHit) {
+		OutBeamLocation = CrosshairHitResult.Location;
 
-		GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+	}
+	else {
+
 
 	}
 
-	FVector CrosshairWorldPosition;
-	FVector CrosshairWorldDirection;
-	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+	//PerformSecondTrace
 
-	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(UGameplayStatics::GetPlayerController(this, 0), CrosshairLocation, CrosshairWorldPosition, CrosshairWorldDirection);
-	if (bScreenToWorld) {
-		FHitResult ScreenTraceHit;
-		const FVector Start = CrosshairWorldPosition;
-		const FVector End = CrosshairWorldPosition + CrosshairWorldDirection * 80'000.f;
+	FHitResult WeaponTraceHit;
+	const FVector WeaponTraceStart = MuzzleSocketLocation;
+	const FVector WeaponTraceEnd = OutBeamLocation;
 
-		OutBeamLocation = End;
-		GetWorld()->LineTraceSingleByChannel(ScreenTraceHit, Start, End, ECollisionChannel::ECC_Visibility);
-		if (ScreenTraceHit.bBlockingHit) {
-			OutBeamLocation = ScreenTraceHit.Location;
-
-
-		}
-
-		//SecondTrace
-
-		FHitResult WeaponTraceHit;
-		const FVector WeaponTraceStart = MuzzleSocketLocation;
-		const FVector WeaponTraceEnd = OutBeamLocation;
-
-		GetWorld()->LineTraceSingleByChannel(WeaponTraceHit, WeaponTraceStart, WeaponTraceEnd, ECollisionChannel::ECC_Visibility);;
-		if (WeaponTraceHit.bBlockingHit) {
-			OutBeamLocation = WeaponTraceHit.Location;
-
-
-		}
+	GetWorld()->LineTraceSingleByChannel(WeaponTraceHit, WeaponTraceStart, WeaponTraceEnd, ECollisionChannel::ECC_Visibility);;
+	if (WeaponTraceHit.bBlockingHit) {
+		OutBeamLocation = WeaponTraceHit.Location;
 		return 1;
-
-
 
 	}
 
 	return 0;
 
-
-
-
-
+	
 
 }
 
@@ -392,6 +373,39 @@ void AShooterCharacter::AutoFireReset() {
 
 }
 
+bool AShooterCharacter::TraceUnderCrosshairs(FHitResult& OutHitResult, FVector& OutHitLocation) {
+
+	//GetViewPortSize
+
+	FVector2D ViewportSize;
+	if (GEngine && GEngine->GameViewport) {
+
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+	}
+
+	FVector CrosshairWorldPosition;
+	FVector CrosshairWorldDirection;
+	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(UGameplayStatics::GetPlayerController(this, 0), CrosshairLocation, CrosshairWorldPosition, CrosshairWorldDirection);
+	if (bScreenToWorld) {
+		const FVector Start = CrosshairWorldPosition;
+		const FVector End = Start + CrosshairWorldDirection * 80'000.f;
+		OutHitLocation = End;
+		GetWorld()->LineTraceSingleByChannel(OutHitResult, Start, End, ECollisionChannel::ECC_Visibility);
+
+		if (OutHitResult.bBlockingHit) {
+			OutHitLocation = OutHitResult.Location;
+			return 1;
+		}
+	}
+
+
+
+	return false;
+}
+
 float AShooterCharacter::GetCrosshairSpreadMultipler() const {
 	return CrosshairSpreadMultiplier;
 }
@@ -403,6 +417,19 @@ void AShooterCharacter::Tick(float DeltaTime)
 
 	CameraInterpZoom(DeltaTime);
 	CalculateCrosshairSpread(DeltaTime);
+
+	FHitResult ItemTraceResult;
+	FVector HitLocation;
+	TraceUnderCrosshairs(ItemTraceResult, HitLocation);
+
+	if (ItemTraceResult.bBlockingHit) {
+		AItem* HitItem = Cast<AItem>(ItemTraceResult.GetActor());
+		if (HitItem&&HitItem->GetPickupWidget()) {
+			HitItem->GetPickupWidget()->SetVisibility(1);
+		}
+
+
+	}
 
 
 }
