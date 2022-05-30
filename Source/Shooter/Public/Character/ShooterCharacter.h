@@ -52,6 +52,18 @@ protected:
 
 	void CalculateCrosshairSpread(float DeltaTime);
 
+
+	void FireButtonPressed();
+	void FireButtonReleased();
+
+
+	void StartFireTimer();
+
+	UFUNCTION()
+	void AutoFireReset();
+
+
+
 private:
 
 	//VisibleAnywhere,BlueprintReadOnly,Category=Camera,meta=(AllowPrivateAccess="true")
@@ -141,12 +153,19 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		float CrosshairShootingFactor;
 
+	bool bFireButtonPressed=0;
 
+	bool bShouldFire=1;
 
+	float AutomaticFireRate = .1f;
+	
+	
+	FTimerHandle AutoFireTimer;
 
-
-
-
+	
+	
+	
+	
 
 public:
 

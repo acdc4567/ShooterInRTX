@@ -8,13 +8,14 @@ public class Shooter : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
 		PublicIncludePaths.AddRange(new string[] {
 		"Shooter/Public/Character"
 		,"Shooter/Public/Animation"
+		,"Shooter/Public/Weapons"
 		});
 
 		// Uncomment if you are using Slate UI

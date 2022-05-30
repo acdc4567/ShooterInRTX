@@ -352,6 +352,46 @@ void AShooterCharacter::CalculateCrosshairSpread(float DeltaTime) {
 	CrosshairSpreadMultiplier = .5f + CrosshairVelocityFactor+CrosshairInAirFactor-CrosshairAimFactor;
 }
 
+void AShooterCharacter::FireButtonPressed() {
+
+	bFireButtonPressed = 1;
+	StartFireTimer();
+}
+
+void AShooterCharacter::FireButtonReleased() {
+
+	bFireButtonPressed = 0;
+
+
+
+}
+
+void AShooterCharacter::StartFireTimer() {
+
+	if (bShouldFire) {
+		FireWeapon();
+		bShouldFire = 0;
+		GetWorldTimerManager().SetTimer(AutoFireTimer, this, &AShooterCharacter::AutoFireReset, AutomaticFireRate);
+	
+	
+	}
+
+
+
+
+}
+
+void AShooterCharacter::AutoFireReset() {
+
+	bShouldFire = 1;
+
+	if (bFireButtonPressed) {
+		StartFireTimer();
+	}
+
+
+}
+
 float AShooterCharacter::GetCrosshairSpreadMultipler() const {
 	return CrosshairSpreadMultiplier;
 }
@@ -387,7 +427,8 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AShooterCharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AShooterCharacter::StopJumping);
 
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AShooterCharacter::FireWeapon);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AShooterCharacter::FireButtonPressed);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AShooterCharacter::FireButtonReleased);
 
 	PlayerInputComponent->BindAction("AimingButton", IE_Pressed, this, &AShooterCharacter::AimingButtonPressed);
 	PlayerInputComponent->BindAction("AimingButton", IE_Released, this, &AShooterCharacter::AimingButtonReleased);
