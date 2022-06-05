@@ -4,7 +4,22 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "AmmoTypes.h"
 #include "ShooterCharacter.generated.h"
+
+
+
+
+UENUM(BlueprintType)
+enum class ECombatState :uint8 {
+	ECS_UnOccupied UMETA(DisplayName = "UnOccupied")
+	, ECS_FireTimerInProgress UMETA(DisplayName = "FireTimerInProgress")
+	, ECS_Reloading UMETA(DisplayName = "Reloading")
+
+	, ECS_MAX UMETA(DisplayName = "DefaultMAX")
+
+};
+
 
 UCLASS()
 class SHOOTER_API AShooterCharacter : public ACharacter
@@ -21,6 +36,10 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+
+	UFUNCTION(BlueprintCallable)
+		void FinishReloading();
 
 
 protected:
@@ -63,6 +82,35 @@ protected:
 	void AutoFireReset();
 
 	bool TraceUnderCrosshairs(FHitResult& OutHitResult,FVector & OutHitLocation);
+
+	void TraceForItems();
+
+	class AWeapon*  SpawnDefaultWeapon();
+
+	void EquipWeapon(AWeapon*  WeaponToEquip);
+
+	void DropWeapon();
+
+	void SelectButtonPressed();
+	void SelectButtonReleased();
+
+	void SwapWeapon(AWeapon* WeaponToSwap);
+
+	void InitializeAmmoMap();
+
+	bool WeaponHasAmmo();
+
+
+	void PlayFireSound();
+	void SendBullet();
+	void PlayGunFireMontage();
+
+	void ReloadButtonPressed();
+
+	void ReloadWeapon();
+
+	
+	bool CarryingAmmo();
 
 
 
@@ -168,10 +216,49 @@ private:
 	
 	FTimerHandle AutoFireTimer;
 
+	bool bShouldTraceForItems=0;
 	
+	int8 OverlappedItemCount = 0;
 	
-	
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+		class AItem* TraceHitItemLastFrame;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		 AWeapon* EquippedWeapon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		TSubclassOf<AWeapon> DefaultWeaponClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		AItem* TraceHitItem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+		float CameraInterpDistance=250.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+		float CameraInterpElevation=65.f;
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+		TMap<EAmmoType, int32> AmmoMap;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+		int32 Starting9mmAmmo=85;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+		int32 StartingARAmmo=120;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		USceneComponent* LHandSceneComponent;
+
+	FTransform ClipTransform;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		ECombatState CombatState=ECombatState::ECS_UnOccupied;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		UAnimMontage* ReloadMontage;
+
 
 public:
 
@@ -184,6 +271,18 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	 float GetCrosshairSpreadMultipler() const;
+
+	FORCEINLINE int8 GetOverlappedItemCount() const { return OverlappedItemCount; }
+
+	void IncrementOverlappedItemCount(int8 Amount);
+
+	FVector GetCameraInterpLocation();
+
+	void GetPickupItem(AItem* Item);
+
+	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
+
+
 
 
 
