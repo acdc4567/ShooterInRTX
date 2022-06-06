@@ -112,7 +112,7 @@ protected:
 	
 	bool CarryingAmmo();
 
-
+	void PickupAmmo(class AAmmo* Ammo);
 
 
 

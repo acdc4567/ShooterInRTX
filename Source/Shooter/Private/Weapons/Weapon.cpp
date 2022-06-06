@@ -62,7 +62,7 @@ void AWeapon::ReloadAmmo(int32 Amount) {
 bool AWeapon::ClipIsFull() {
 
 
-	return Ammo >= MagazineCapacity;;
+	return Ammo >= MagazineCapacity;
 }
 
 void AWeapon::StopFalling() {
@@ -70,7 +70,7 @@ void AWeapon::StopFalling() {
 	bFalling = 0;
 	SetItemState(EItemState::EIS_Pickup);
 
-
+	StartPulseTimer();
 
 
 }

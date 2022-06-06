@@ -18,6 +18,13 @@ enum class EItemRarity :uint8 {
 
 };
 
+UENUM(BlueprintType)
+enum class EItemType : uint8 {
+	EIT_Ammo UMETA(DisplayName = "Ammo"),
+	EIT_Weapon UMETA(DisplayName = "Weapon"),
+
+	EIT_MAX UMETA(DisplayName = "DefaultMAX")
+};
 
 UENUM(BlueprintType)
 enum class EItemState :uint8 {
@@ -41,6 +48,12 @@ public:
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void EnableCustomDepth();
+	virtual void DisableCustomDepth();
+	void DIsableGlowMaterial();
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -58,7 +71,17 @@ protected:
 	void ItemInterp(float DeltaTime);
 
 	
+	virtual void InitializeCustomDepth();
 
+
+	virtual void OnConstruction(const FTransform & Transform) override;
+
+	void EnableGlowMaterial();
+	
+	void UpdatePulse();
+
+	void StartPulseTimer();
+	void ResetPulseTimer();
 
 
 private:
@@ -129,11 +152,39 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
 		 USoundCue* EquipSound;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
+		int32 MaterialIndex = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
+		UMaterialInstanceDynamic* DynamicMaterialInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
+		UMaterialInstance* MaterialInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+		EItemType ItemType=EItemType::EIT_Weapon;
 
 
+	bool bCanEnableCustomDepth=1;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
+		class UCurveVector* PulseCurve;
 
+	FTimerHandle PulseTimer;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
+		float PulseCurveTime=5.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
+		float GlowAmount=150.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
+		float FresnelExponent=3.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ItemProperties, meta = (AllowPrivateAccess = "true"))
+		float FresnelReflectFraction=4.f;
+
+	
 
 public:	
 	
@@ -156,5 +207,10 @@ public:
 	FORCEINLINE USoundCue* GetEquipSound() const { return EquipSound; }
 
 	void StartItemCurve(AShooterCharacter* Char);
+	FORCEINLINE int32 GetItemCount() const { return ItemCount; }
+
+
+
+
 
 };

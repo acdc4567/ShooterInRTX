@@ -16,6 +16,7 @@
 #include "Weapons/Weapon.h"
 #include "Components/SphereComponent.h"
 #include "Components/BoxComponent.h"
+#include "Ammunition/Ammo.h"
 
 
 
@@ -66,6 +67,8 @@ void AShooterCharacter::BeginPlay()
 		CameraCurrentFOV = CameraDefaultFOV;
 	}
 	EquipWeapon(SpawnDefaultWeapon());
+	EquippedWeapon->DisableCustomDepth();
+	EquippedWeapon->DIsableGlowMaterial();
 
 	InitializeAmmoMap();
 }
@@ -356,7 +359,7 @@ void AShooterCharacter::TraceForItems() {
 			TraceHitItem = Cast<AItem>(ItemTraceResult.GetActor());
 			if (TraceHitItem && TraceHitItem->GetPickupWidget()) {
 				TraceHitItem->GetPickupWidget()->SetVisibility(1);
-			
+				TraceHitItem->EnableCustomDepth();
 			
 			}
 
@@ -364,6 +367,10 @@ void AShooterCharacter::TraceForItems() {
 				if (TraceHitItem != TraceHitItemLastFrame) {
 
 					TraceHitItemLastFrame->GetPickupWidget()->SetVisibility(0);
+					TraceHitItemLastFrame->DisableCustomDepth();
+
+
+
 				}
 			
 			}
@@ -374,6 +381,7 @@ void AShooterCharacter::TraceForItems() {
 	}
 	else if (TraceHitItemLastFrame) {
 		TraceHitItemLastFrame->GetPickupWidget()->SetVisibility(0);
+		TraceHitItemLastFrame->DisableCustomDepth();
 	}
 
 
@@ -391,6 +399,26 @@ void AShooterCharacter::TraceForItems() {
 
 
 }
+
+ void AShooterCharacter::PickupAmmo( AAmmo* Ammo) {
+
+
+	 if (AmmoMap.Find(Ammo->GetAmmoType())) {
+		 int32 AmmoCount = AmmoMap[Ammo->GetAmmoType()];
+		 AmmoCount += Ammo->GetItemCount();
+		 AmmoMap[Ammo->GetAmmoType()] = AmmoCount;
+		 if (EquippedWeapon->GetAmmoType() == Ammo->GetAmmoType()) {
+			 if (EquippedWeapon->GetAmmo() == 0) {
+				 ReloadWeapon();
+			 }
+		 }
+		 Ammo->Destroy();
+
+
+	 }
+
+
+ }
 
 void AShooterCharacter::EquipWeapon(AWeapon* WeaponToEquip) {
 
@@ -453,9 +481,7 @@ void AShooterCharacter::SelectButtonPressed() {
 	if (TraceHitItem) {
 		TraceHitItem->StartItemCurve(this);
 
-		if (TraceHitItem->GetPickupSound()) {
-			UGameplayStatics::PlaySound2D(this, TraceHitItem->GetPickupSound());
-		}
+		
 
 
 	}
@@ -716,6 +742,11 @@ void AShooterCharacter::GetPickupItem(AItem* Item) {
 	if (Weapon) {
 		SwapWeapon(Weapon);
 	}
+
+	auto Ammo = Cast<AAmmo>(Item);
+	if(Ammo)
+	PickupAmmo( Ammo);
+
 
 }
 
