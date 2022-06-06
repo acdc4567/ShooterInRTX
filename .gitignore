@@ -26,8 +26,15 @@ Content/Materials/*
 Content/Meshes/*
 Content/Sequences/*
 Content/Textures/*
-Content/ParagonKhaimera/Characters/*
 Content/ParagonGrux/Characters/Maps/*
+Content/ParagonKhaimera/Characters/Global/Feathers/*
+Content/ParagonKhaimera/Characters/Global/MaterialFunctions/*
+Content/ParagonKhaimera/Characters/Global/MaterialLayers/*
+Content/ParagonKhaimera/Characters/Global/Mouth/*
+Content/ParagonKhaimera/Characters/Global/ParameterCollections/*
+Content/ParagonKhaimera/Characters/Global/Textures/*
+Content/ParagonKhaimera/Characters/Maps/*
+
 
 
 
