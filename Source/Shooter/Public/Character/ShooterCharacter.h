@@ -62,7 +62,7 @@ protected:
 
 	void FireWeapon();
 
-	bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);;
+	bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FHitResult& OutHitResult);
 
 	void AimingButtonPressed();
 	void AimingButtonReleased();

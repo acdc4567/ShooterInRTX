@@ -19,6 +19,10 @@ public class Shooter : ModuleRules
 		,"Shooter/Public/PlayerControllers"
 		,"Shooter/Public/GameModes"
 		,"Shooter/Public/Ammunition"
+		,"Shooter/Public/Enemy"
+		,"Shooter/Public/Components"
+		,"Shooter/Public/Dev"
+		,"Shooter/Public/UI"
 		});
 
 		// Uncomment if you are using Slate UI

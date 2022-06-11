@@ -68,6 +68,13 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponProperties, meta = (AllowPrivateAccess = "true"))
 		FName ReloadMontageSection = FName(TEXT("ReloadSMG"));
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponProperties, meta = (AllowPrivateAccess = "true"))
+		float Damage=10.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponProperties, meta = (AllowPrivateAccess = "true"))
+		float HeadShotDamage = 20.f;
+
+
 public:
 
 		void ThrowWeapon();
@@ -84,6 +91,8 @@ public:
 		FORCEINLINE EAmmoType GetAmmoType() const { return AmmoType; }
 
 		FORCEINLINE FName GetReloadMontageSectionName() const { return ReloadMontageSection; }
+		FORCEINLINE float GetDamage() const { return Damage; }
+		FORCEINLINE float GetHeadShotDamage() const { return HeadShotDamage; }
 
 		void ReloadAmmo(int32 Amount);
 
