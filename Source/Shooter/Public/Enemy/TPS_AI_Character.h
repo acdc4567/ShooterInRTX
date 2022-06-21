@@ -16,6 +16,13 @@ public:
 	// Sets default values for this character's properties
 	ATPS_AI_Character();
 
+
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AI)
+		class UBehaviorTree* BehaviorTreeAsset;
+
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -32,7 +39,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Movement)
 		TSubclassOf<class UUserWidget> HitMarkerWidgetClass;
 
-
+	
 	//Functions
 
 	float SetDamage(float Damage, float CriticalHitChance, float CriticalHitModifier, const FHitResult& HitResult, bool& bWasCritical);

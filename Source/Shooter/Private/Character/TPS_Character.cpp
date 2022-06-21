@@ -8,7 +8,6 @@
 #include "Animation/AnimMontage.h"
 #include "WeaponBuys/WeaponBuyBase.h"
 
-DEFINE_LOG_CATEGORY_STATIC(BaseCharacterLog, All, All);
 
 
 
