@@ -9,12 +9,16 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Character/STUBaseCharacter.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
+
 
 
 void ASTURifleWeapon::StartFire() {
 
-	MakeShot();
+	
 	GetWorldTimerManager().SetTimer(ShotTimerHandle, this, &ASTURifleWeapon::MakeShot, TimeBetweenShots, 1);
+	MakeShot();
 
 }
 
@@ -26,26 +30,53 @@ void ASTURifleWeapon::StopFire() {
 }
 
 void ASTURifleWeapon::MakeShot() {
-	if (!GetWorld())return;
+	if (!GetWorld() || IsAmmoEmpty()) {
+		StopFire();
+		return;
+	}
 
 	FVector TraceStart, TraceEnd;
-	if (!GetTraceData(TraceStart, TraceEnd)) return;
+	if (!GetTraceData(TraceStart, TraceEnd)) {
+		StopFire();
+		return;
+	} 
 
 	FHitResult HitResult;
 	MakeHit(HitResult, TraceStart, TraceEnd);
 
+	if (MuzzleParticles) {
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleParticles, GetMuzzleWorldLocation());
+
+	}
+
 	if (HitResult.bBlockingHit) {
 		MakeDamage(HitResult);
-		DrawDebugLine(GetWorld(), GetMuzzleWorldLocation(), HitResult.ImpactPoint, FColor::Cyan, 0, 3.f, 0, 3.f);
+		//DrawDebugLine(GetWorld(), GetMuzzleWorldLocation(), HitResult.ImpactPoint, FColor::Cyan, 0, 3.f, 0, 3.f);
+		if (ImpactParticles) {
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, HitResult.ImpactPoint);
 
-		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10.f, 24, FColor::Red, 0, 5.f);
+		}
+		UParticleSystemComponent* Beam = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BeamParticles, GetMuzzleWorldLocation());
+
+		if (Beam) {
+			Beam->SetVectorParameter(FName("Target"), HitResult.ImpactPoint);
+		}
+		//DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10.f, 24, FColor::Red, 0, 5.f);
 		//UE_LOG(LogBaseWeapon, Warning, TEXT("Bone : %s"), *HitResult.BoneName.ToString());
 	}
 	else {
-		DrawDebugLine(GetWorld(), GetMuzzleWorldLocation(), TraceEnd, FColor::Green, 0, 3.f, 0, 3.f);
+		//DrawDebugLine(GetWorld(), GetMuzzleWorldLocation(), TraceEnd, FColor::Green, 0, 3.f, 0, 3.f);
+		UParticleSystemComponent* Beam = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BeamParticles, GetMuzzleWorldLocation());
 
+		if (Beam) {
+			Beam->SetVectorParameter(FName("Target"), TraceEnd);
+		}
 	}
 
+	
+
+
+	DecreaseAmmo();
 }
 
 bool ASTURifleWeapon::GetTraceData(FVector& TraceStart, FVector& TraceEnd) const {

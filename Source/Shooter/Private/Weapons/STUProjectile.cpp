@@ -11,6 +11,7 @@
 
 
 
+
 // Sets default values
 ASTUProjectile::ASTUProjectile()
 {
@@ -65,7 +66,14 @@ void ASTUProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 
 	UGameplayStatics::ApplyRadialDamageWithFalloff(GetWorld(), DamageAmount, MinDamageAmount, GetActorLocation(), DamageInnerRadius, DamageRadius, DamageFalloff, UDamageType::StaticClass(), {GetOwner()}, this, GetController(), ECollisionChannel::ECC_Visibility);
 
-	DrawDebugSphere(GetWorld(), GetActorLocation(), DamageRadius, 24, FColor::Red,0,5.f);
+	//DrawDebugSphere(GetWorld(), GetActorLocation(), DamageRadius, 24, FColor::Purple,0,5.f);
+	if (ImpactParticles) {
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(),ImpactParticles,GetActorLocation());
+			
+			
+			
+	}
+
 	Destroy();
 
 }

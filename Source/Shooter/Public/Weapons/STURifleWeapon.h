@@ -34,6 +34,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Components)
 		float DamageAmount = 10.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Components)
+		UParticleSystem* ImpactParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Components)
+		UParticleSystem* MuzzleParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Components)
+		UParticleSystem* BeamParticles;
 
 	virtual bool GetTraceData(FVector& TraceStart, FVector& TraceEnd) const override;
 

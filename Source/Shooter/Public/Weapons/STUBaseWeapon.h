@@ -4,7 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "STUCoreTypes.h"
 #include "STUBaseWeapon.generated.h"
+
+
+
+
+
+
+
+
+
+
 
 UCLASS()
 class SHOOTER_API ASTUBaseWeapon : public AActor
@@ -17,6 +28,14 @@ public:
 
 	virtual void StartFire();
 	virtual void StopFire();
+
+	FOnClipEmptySignature OnClipEmpty;
+
+
+	void ChangeClip();
+	bool CanReload() const;
+
+	bool IsAmmoEmpty() const;
 
 
 protected:
@@ -34,6 +53,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Components)
 		float TraceMaxDistance = 80000.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Components)
+		FAmmoData DefaultAmmo {15, 10, 0};
+		
 	
 	
 
@@ -52,9 +74,23 @@ protected:
 
 	void MakeHit(FHitResult& HitResult,const FVector& TraceStart, const FVector& TraceEnd);
 
+
+	void DecreaseAmmo();
+	
+	bool IsClipEmpty() const;
+	
+	void LogAmmo();
+
+
+
+
+
+
+
+
 	
 private:
-
+	FAmmoData CurrentAmmo;
 
 	
 	

@@ -21,6 +21,9 @@ public:
 	// Sets default values for this character's properties
 	ASTUBaseCharacter(const	 FObjectInitializer& ObjInit);
 
+
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -53,7 +56,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Movement)
 		FVector2D LandedDamage= FVector2D(10.f, 50.f);
 
-	
+	virtual void OnDeath();
 
 
 
@@ -74,7 +77,7 @@ private:
 	void OnStartRunning();
 	void OnStopRunning();
 
-	void OnDeath();
+	
 
 	void OnHealthChanged(float Health);
 

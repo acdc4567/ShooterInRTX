@@ -18,6 +18,14 @@ public:
 
 	virtual void DrawHUD() override;
 
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Movement)
+		TSubclassOf<UUserWidget> PlayerHUDWidgetClass;
+
+	virtual void BeginPlay() override;
+
+
+
 
 private:
 
