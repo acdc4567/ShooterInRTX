@@ -19,6 +19,12 @@
 #include "Ammunition/Ammo.h"
 #include "Interfaces/BulletHitInterface.h"
 #include "Enemy/Enemy.h"
+#include "Attributes/AttributeSetBase.h"
+#include "Components/CapsuleComponent.h"
+#include "Character/ShooterEnemyCharacter.h"
+#include "AIController.h"
+#include "GameFramework/PlayerController.h"
+#include "BrainComponent.h"
 
 
 
@@ -43,6 +49,9 @@ AShooterCharacter::AShooterCharacter()
 	FollowCamera->SetupAttachment(CameraBoom,USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = 0;
 
+	
+
+
 	bUseControllerRotationPitch = 0;
 	bUseControllerRotationYaw = 1;
 	bUseControllerRotationRoll = 0;
@@ -51,11 +60,47 @@ AShooterCharacter::AShooterCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 	GetCharacterMovement()->AirControl = .2f;
 
+	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>("SwordMesh");
+	SwordMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SwordMesh->SetupAttachment(GetRootComponent());
 
 	LHandSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("LHandSceneComp"));
 
+	AbilitySystemComp = CreateDefaultSubobject<UAbilitySystemComponent>("AbilitySystemComp");
+
+	AttributeSetBaseComp = CreateDefaultSubobject<UAttributeSetBase>("AttributeSetBaseComp");
+
+	CapsuleComp = CreateDefaultSubobject<UCapsuleComponent>("CapsuleComp");
+	CapsuleComp->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	CapsuleComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	CapsuleComp->SetupAttachment(GetMesh(),FName("RightHandSocketTwinR"));
 
 
+
+
+
+
+
+}
+
+void AShooterCharacter::AutoDetermineTeamID() {
+
+	if (GetController()&&GetController()->IsPlayerController()) {
+		TeamId = 0;
+	}
+}
+
+void AShooterCharacter::Deadxc() {
+	APlayerController* PC = Cast<APlayerController>(GetController());
+
+	if (PC) {
+		PC->DisableInput(PC);
+	}
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (AIC) {
+		AIC->GetBrainComponent()->StopLogic("Dead");
+	}
 
 }
 
@@ -63,7 +108,12 @@ AShooterCharacter::AShooterCharacter()
 void AShooterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	check(AbilitySystemComp);
+	check(AttributeSetBaseComp);
+	check(CapsuleComp);
+
+	AttributeSetBaseComp->OnHealthChange.AddDynamic(this, &AShooterCharacter::OnHealthxChanged);
+
 	if (FollowCamera) {
 		CameraDefaultFOV = GetFollowCamera()->FieldOfView;
 		CameraCurrentFOV = CameraDefaultFOV;
@@ -72,7 +122,28 @@ void AShooterCharacter::BeginPlay()
 	EquippedWeapon->DisableCustomDepth();
 	EquippedWeapon->DIsableGlowMaterial();
 
+	if (SwordMesh) {
+		FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
+		
+		SwordMesh->AttachToComponent(GetMesh(), AttachmentRules, FName(TEXT("RightHandSocketTwinR")));
+
+	}
+
+
+	CapsuleComp->OnComponentBeginOverlap.AddDynamic(this,&AShooterCharacter::OnSwordOverlap);
+		
+	AutoDetermineTeamID();
+
 	InitializeAmmoMap();
+
+	if (AbilitToAquire) {
+		AquireAbility(AbilitToAquire);
+	}
+
+	
+
+
+
 }
 
 void AShooterCharacter::MoveForward(float Value) {
@@ -286,16 +357,53 @@ void AShooterCharacter::CalculateCrosshairSpread(float DeltaTime) {
 }
 
 void AShooterCharacter::FireButtonPressed() {
-	bFireButtonPressed = 1;
-	FireWeapon();
+	if (!bIsUsingAbility) {
+		bFireButtonPressed = 1;
+		FireWeapon();
+	}
+	else {
+		OneKeyPressed();
+		/*
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && MeleeMontage) {
+			AnimInstance->Montage_Play(MeleeMontage);
+			AnimInstance->Montage_JumpToSection(FName("StartMelee"));
+
+		}*/
+
+		if (AbilitToAquire) {
+			AbilitySystemComp->TryActivateAbilityByClass(AbilitToAquire);
+		}
+		
+
+
+
+
+	}
 	
 }
 
 void AShooterCharacter::FireButtonReleased() {
+	if (!bIsUsingAbility) {
+		bFireButtonPressed = 0;
+	}
+	
 
-	bFireButtonPressed = 0;
 
 
+}
+
+void AShooterCharacter::OneKeyPressed() {
+
+	if (EquippedWeapon) {
+		EquippedWeapon->GetItemMesh()->SetVisibility(!bItemVisibility);
+		if (bIsUsingAbility) {
+			bItemVisibility = 1;
+		}
+		else {
+			bItemVisibility = 0;
+		}
+	}
 
 }
 
@@ -422,6 +530,37 @@ void AShooterCharacter::TraceForItems() {
 
 	 }
 
+
+ }
+
+ void AShooterCharacter::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	 AShooterCharacter* EnemyCharacter = Cast<AShooterCharacter>(OtherActor);
+	 if (EnemyCharacter&&EnemyCharacter->TeamId!=this->TeamId) {
+		 //UE_LOG(LogTemp, Warning, TEXT("EnemyCharacter"));
+		 
+		 SendingGameplayEventToActor(OtherActor);
+	 }
+ 
+ 
+ 
+ 
+ 
+ }
+
+ void AShooterCharacter::OnHealthxChanged(float Health, float MaxHealth) {
+	 
+	 BP_OnHealthChanged(Health, MaxHealth);
+	 if (Health <= 0.f&&!bIsDead) {
+		 bIsDead = 1;
+		 UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		 if (AnimInstance && DeathAMontage) {
+			 AnimInstance->Montage_Play(DeathAMontage);
+			 AnimInstance->Montage_JumpToSection(FName("DeathA"));
+
+		 }
+		 Deadxc();
+		 SetLifeSpan(5.f);
+	 }
 
  }
 
@@ -747,6 +886,47 @@ void AShooterCharacter::FinishReloading() {
 
 }
 
+
+
+
+
+
+
+UAbilitySystemComponent* AShooterCharacter::GetAbilitySystemComponent() const {
+	return AbilitySystemComp;
+}
+
+
+
+
+
+
+void AShooterCharacter::AquireAbility(TSubclassOf<UGameplayAbility> AbilityToAquire) {
+
+	if (AbilitySystemComp) {
+		if (HasAuthority()&&AbilityToAquire) {
+			FGameplayAbilitySpecDef SpecDef = FGameplayAbilitySpecDef();
+			SpecDef.Ability = AbilityToAquire;
+			FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(SpecDef, 1);
+			AbilitySystemComp->GiveAbility(AbilitySpec);
+
+		}
+		AbilitySystemComp->InitAbilityActorInfo(this, this);
+	}
+
+
+
+
+}
+
+bool AShooterCharacter::IsOtherHostile(AShooterCharacter* Other) {
+	return TeamId!=Other->GetTeamID();
+}
+
+uint8 AShooterCharacter::GetTeamID() const {
+	return TeamId;
+}
+
 float AShooterCharacter::GetCrosshairSpreadMultipler() const {
 	return CrosshairSpreadMultiplier;
 }
@@ -842,6 +1022,7 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 	PlayerInputComponent->BindAction("ReloadButton", IE_Pressed, this, &AShooterCharacter::ReloadButtonPressed);
 
+	PlayerInputComponent->BindAction("OneKey", IE_Pressed, this, &AShooterCharacter::OneKeyPressed);
 
 
 

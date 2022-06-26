@@ -48,6 +48,8 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime) {
 
 		bReloading = ShooterCharacter->GetCombatState() == ECombatState::ECS_Reloading;
 		
+		bIsUsingAbility = ShooterCharacter->GetIsUsingAbility();
+
 
 		if (bReloading) {
 			OffsetState = EOffsetState::EOS_Reloading;
@@ -67,6 +69,9 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime) {
 		}
 
 	}
+
+	
+
 
 	TurnInPlace();
 	Lean(DeltaTime);

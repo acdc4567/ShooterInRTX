@@ -90,6 +90,10 @@ private:
 		bool bReloading=0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = TurnInPlace, meta = (AllowPrivateAccess = "true"))
+		bool bIsUsingAbility = 0;
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = TurnInPlace, meta = (AllowPrivateAccess = "true"))
 		EOffsetState OffsetState=EOffsetState::EOS_Hip;
 
 

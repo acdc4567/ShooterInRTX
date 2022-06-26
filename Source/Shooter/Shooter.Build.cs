@@ -8,7 +8,7 @@ public class Shooter : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG","GameplayTasks","NavigationSystem" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG","GameplayTasks","NavigationSystem","GameplayAbilities","GameplayTags","AIModule" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
@@ -28,6 +28,7 @@ public class Shooter : ModuleRules
 		,"Shooter/Public/GameStates"
 		,"Shooter/Public/GameInstances"
 		,"Shooter/Public/WeaponBuys"
+		,"Shooter/Public/Attributes"
 		});
 
 		// Uncomment if you are using Slate UI

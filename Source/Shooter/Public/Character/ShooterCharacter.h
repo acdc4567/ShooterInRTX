@@ -5,6 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AmmoTypes.h"
+#include "AbilitySystemInterface.h"
+#include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbility.h"
+
 #include "ShooterCharacter.generated.h"
 
 
@@ -22,7 +26,7 @@ enum class ECombatState :uint8 {
 
 
 UCLASS()
-class SHOOTER_API AShooterCharacter : public ACharacter
+class SHOOTER_API AShooterCharacter : public ACharacter,public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -42,7 +46,31 @@ public:
 		void FinishReloading();
 
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterBase)
+		UAbilitySystemComponent* AbilitySystemComp;
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const ;
+
+	UFUNCTION(BlueprintCallable,Category = CharacterBase)
+		void AquireAbility(TSubclassOf<UGameplayAbility> AbilityToAquire);
+
+	UPROPERTY(VisibleAnywhere,Category = CharacterBase)
+		class UAttributeSetBase* AttributeSetBaseComp;
+
+	UFUNCTION(BlueprintCallable, Category = CharacterBase)
+		bool IsOtherHostile(AShooterCharacter* Other);
+
+	uint8 GetTeamID() const;
+
+
+
+
 protected:
+	uint8 TeamId = 255;
+
+	void AutoDetermineTeamID();
+
+	void Deadxc();
 
 
 	// Called when the game starts or when spawned
@@ -71,9 +99,12 @@ protected:
 
 	void CalculateCrosshairSpread(float DeltaTime);
 
-
-	void FireButtonPressed();
+	
+	UFUNCTION(BlueprintCallable)
+		void FireButtonPressed(); 
 	void FireButtonReleased();
+
+	void OneKeyPressed();
 
 
 	void StartFireTimer();
@@ -115,6 +146,19 @@ protected:
 	void PickupAmmo(class AAmmo* Ammo);
 
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterBase)
+		TSubclassOf<UGameplayAbility> AbilitToAquire;
+
+	UFUNCTION()
+	void OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+		void OnHealthxChanged(float Health, float MaxHealth);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterBase)
+		bool bIsDead = 0;
+
+
 
 
 
@@ -131,6 +175,13 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FollowCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		UStaticMeshComponent* SwordMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		class UCapsuleComponent* CapsuleComp;
+
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		float BaseTurnRate=45.f;
@@ -155,6 +206,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
 		 UAnimMontage* BelicaHipFireMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		UAnimMontage* DeathAMontage;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -259,6 +313,17 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
 		UAnimMontage* ReloadMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		UAnimMontage* MeleeMontage;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		bool bItemVisibility = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+		bool bIsUsingAbility = 0;
+
+
 
 public:
 
@@ -268,6 +333,9 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE bool GetIsCarryingTwinBlast() const { return bIsCarryingTwinBlast; }
 	FORCEINLINE bool GetAiming() const { return bAiming; }
+
+	FORCEINLINE bool GetIsUsingAbility() const { return bIsUsingAbility; }
+
 
 	UFUNCTION(BlueprintCallable)
 	 float GetCrosshairSpreadMultipler() const;
@@ -282,8 +350,11 @@ public:
 
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 
+	UFUNCTION(BlueprintImplementableEvent, Category = ShooterChar)
+		void SendingGameplayEventToActor(AActor* OthrActor);
 
-
+	UFUNCTION(BlueprintImplementableEvent, Category = ShooterChar)
+		void BP_OnHealthChanged(float Health,float MaxHealth);
 
 
 
